@@ -135,6 +135,13 @@ impl Packet {
         }
     }
 
+    pub fn is_option_ack(&self) -> bool {
+        match self {
+            &OptionAcknowledgment(..) => true,
+            _ => false
+        }
+    }
+
     pub fn to_ioerror(&self) -> Option<IoError> {
         match *self {
             Error(_, ref msg) => {

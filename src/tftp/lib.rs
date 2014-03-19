@@ -11,8 +11,16 @@
 #[crate_type = "rlib"];
 #[crate_type = "dylib"];
 #[allow(deprecated_owned_vector)];
-#[deny(warnings)];
+//#[deny(warnings)];
+#[feature(macro_rules)];
 
 extern crate collections;
+extern crate rand;
+
+pub use common::TransferOptions;
 
 pub mod protocol;
+
+mod util;
+mod common;
+pub mod client;
