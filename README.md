@@ -19,6 +19,6 @@ RFCs implemented:
 
 ```
 git clone https://github.com/arjantop/rust-tftp
-cd rust-bencode
+cd rust-tftp
 make
 ```
