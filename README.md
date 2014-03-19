@@ -18,7 +18,7 @@ RFCs implemented:
 ## Installation
 
 ```
-git clone https://github.com/arjantop/rust-bencode
+git clone https://github.com/arjantop/rust-tftp
 cd rust-bencode
 make
 ```
