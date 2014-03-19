@@ -11,11 +11,12 @@
 #[crate_type = "rlib"];
 #[crate_type = "dylib"];
 #[allow(deprecated_owned_vector)];
-//#[deny(warnings)];
-#[feature(macro_rules)];
+#[deny(warnings)];
+#[feature(macro_rules, phase)];
 
 extern crate collections;
 extern crate rand;
+#[phase(syntax, link)] extern crate log;
 
 pub use common::TransferOptions;
 
