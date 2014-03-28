@@ -1,7 +1,6 @@
 use std::io;
 use std::io::IoResult;
 use std::io::net::ip::{SocketAddr, Ipv4Addr};
-use std::vec_ng::Vec;
 
 use protocol::{ReadRequest, WriteRequest, Data, Acknowledgment};
 use protocol::{OptionAcknowledgment, Packet, One};
@@ -158,7 +157,6 @@ mod test {
     use std::io;
     use std::io::{IoResult, IoError};
     use std::io::net::ip::{SocketAddr, Ipv4Addr};
-    use std::vec_ng::Vec;
     use std::default::Default;
 
     use collections::HashMap;

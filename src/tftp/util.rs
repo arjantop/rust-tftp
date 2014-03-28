@@ -1,7 +1,7 @@
 use std::io::{IoResult, IoError, InvalidInput};
 use std::io::net::udp::UdpSocket;
 use std::io::net::ip::{SocketAddr, IpAddr};
-use std::vec;
+use std::slice;
 
 use rand::random;
 
@@ -61,7 +61,7 @@ pub fn socket_reader(us: UdpSocket, mode: Mode, packet_size: uint) -> Receiver<(
     let (snd, rcv) = channel();
     spawn(proc() {
         let mut socket = us;
-        let mut buf = vec::from_elem(packet_size, 0u8);
+        let mut buf = slice::from_elem(packet_size, 0u8);
         loop {
             match receive_packet(&mut socket, mode, buf) {
                 Ok(res) => snd.send(res),

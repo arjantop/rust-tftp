@@ -24,7 +24,7 @@ pub struct TransferOptions {
     rollover: Option<RolloverMethod>
 }
 
-fn find_as<K: Hash + Eq, T: from_str::FromStr>(h: &HashMap<K, ~str>, key: K) -> Option<T> {
+fn find_as<K: Hash + TotalEq, T: from_str::FromStr>(h: &HashMap<K, ~str>, key: K) -> Option<T> {
     h.find(&key).and_then(|s| from_str::<T>(*s))
 }
 

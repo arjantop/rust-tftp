@@ -5,7 +5,6 @@ use std::str;
 use std::fmt;
 use std::from_str;
 use std::ascii::StrAsciiExt;
-use std::vec_ng::Vec;
 
 use collections::HashMap;
 
@@ -263,7 +262,7 @@ impl Packet {
         let mut used;
         loop {
             {
-                let available = match buf.fill() {
+                let available = match buf.fill_buf() {
                     Ok(n) => n,
                     Err(ref e) if res.len() > 0 && e.kind == io::EndOfFile => {
                         used = 0;
@@ -346,8 +345,6 @@ fn invalid_input_error<T>(desc: &'static str) -> IoResult<T> {
 
 #[cfg(test)]
 mod test {
-    use std::vec_ng::Vec;
-
     use super::{Packet, Octet, NetAscii};
     use super::{ReadRequest, Data};
 
@@ -386,8 +383,6 @@ mod test {
 #[cfg(test)]
 mod bench {
     extern crate test;
-
-    use std::vec_ng::Vec;
 
     use collections::hashmap::HashMap;
     use self::test::BenchHarness;
