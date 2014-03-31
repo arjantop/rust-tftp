@@ -6,13 +6,13 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-#[crate_id = "tftp"];
-#[license = "MIT/ASL2"];
-#[crate_type = "rlib"];
-#[crate_type = "dylib"];
-#[allow(deprecated_owned_vector)];
-#[deny(warnings)];
-#[feature(macro_rules, phase)];
+#![crate_id = "tftp"]
+#![license = "MIT/ASL2"]
+#![crate_type = "rlib"]
+#![crate_type = "dylib"]
+#![allow(deprecated_owned_vector)]
+#![deny(warnings)]
+#![feature(macro_rules, phase)]
 
 extern crate collections;
 extern crate rand;
