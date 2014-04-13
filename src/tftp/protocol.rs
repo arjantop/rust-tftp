@@ -205,7 +205,7 @@ impl Packet {
             } else if *b == '\r' as u8 {
                 try!(w.write_str("\r\0"))
             } else {
-                try!(w.write_u8(b.clone()))
+                try!(w.write_u8(*b))
             }
         }
         return Ok(())
@@ -224,8 +224,7 @@ impl Packet {
             let data = try!(if mode == NetAscii {
                 Packet::decode_netascii(&mut buf)
             } else {
-                let d = try!(buf.read_to_end());
-                Ok(Vec::from_slice(d.as_slice()))
+                buf.read_to_end()
             });
             Ok(Data(block_id, data))
         } else if opcode == ACK as u16 {
@@ -385,60 +384,60 @@ mod bench {
     extern crate test;
 
     use collections::hashmap::HashMap;
-    use self::test::BenchHarness;
+    use self::test::Bencher;
 
     use super::{Packet, Mode, Octet, NetAscii};
     use super::{ReadRequest, Data, Acknowledgment};
 
-    fn bench_encode(b: &mut BenchHarness, p: &Packet, m: Mode) {
+    fn bench_encode(b: &mut Bencher, p: &Packet, m: Mode) {
         let packet_bytes = Packet::encode(Octet, p).unwrap();
         b.iter(|| { Packet::encode(m, p) });
         b.bytes = packet_bytes.len() as u64;
     }
 
-    fn bench_decode(b: &mut BenchHarness, p: &Packet, m: Mode) {
+    fn bench_decode(b: &mut Bencher, p: &Packet, m: Mode) {
         let packet_bytes = Packet::encode(Octet, p).unwrap();
         b.iter(|| { Packet::decode(m, packet_bytes.as_slice()) });
         b.bytes = packet_bytes.len() as u64;
     }
 
     #[bench]
-    fn encode_read_request(b: &mut BenchHarness) {
+    fn encode_read_request(b: &mut Bencher) {
         bench_encode(b, &ReadRequest(~"file/name.ext", Octet, HashMap::new()), Octet)
     }
 
     #[bench]
-    fn decode_read_request(b: &mut BenchHarness) {
+    fn decode_read_request(b: &mut Bencher) {
         bench_decode(b, &ReadRequest(~"file/name.ext", Octet, HashMap::new()), Octet)
     }
 
     #[bench]
-    fn encode_data_octet(b: &mut BenchHarness) {
+    fn encode_data_octet(b: &mut Bencher) {
         bench_encode(b, &Data(99, Vec::from_slice(bytes!("hello\r\nworld\n"))), Octet)
     }
 
     #[bench]
-    fn decode_data_octet(b: &mut BenchHarness) {
+    fn decode_data_octet(b: &mut Bencher) {
         bench_decode(b, &Data(99, Vec::from_slice(bytes!("hello\r\nworld\n"))), Octet)
     }
 
     #[bench]
-    fn encode_data_netascii(b: &mut BenchHarness) {
+    fn encode_data_netascii(b: &mut Bencher) {
         bench_encode(b, &Data(99, Vec::from_slice(bytes!("hello\r\nworld\n"))), NetAscii)
     }
 
     #[bench]
-    fn decode_data_netascii(b: &mut BenchHarness) {
+    fn decode_data_netascii(b: &mut Bencher) {
         bench_decode(b, &Data(99, Vec::from_slice(bytes!("hello\r\nworld\n"))), NetAscii)
     }
 
     #[bench]
-    fn encode_ack(b: &mut BenchHarness) {
+    fn encode_ack(b: &mut Bencher) {
         bench_encode(b, &Acknowledgment(21000), Octet)
     }
 
     #[bench]
-    fn decode_ack(b: &mut BenchHarness) {
+    fn decode_ack(b: &mut Bencher) {
         bench_decode(b, &Acknowledgment(21000), Octet)
     }
 }

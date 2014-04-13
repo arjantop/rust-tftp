@@ -16,12 +16,12 @@ use protocol::{Packet, Error, UnknownTransferId};
 
 #[deriving(Show, Clone)]
 pub struct TransferOptions {
-    mode: Mode,
-    block_size: uint,
-    transfer_size: Option<u64>,
-    receive_timeout: u64,
-    resend_timeout: u64,
-    rollover: Option<RolloverMethod>
+    pub mode: Mode,
+    pub block_size: uint,
+    pub transfer_size: Option<u64>,
+    pub receive_timeout: u64,
+    pub resend_timeout: u64,
+    pub rollover: Option<RolloverMethod>
 }
 
 fn find_as<K: Hash + TotalEq, T: from_str::FromStr>(h: &HashMap<K, ~str>, key: K) -> Option<T> {
@@ -88,14 +88,14 @@ impl Default for TransferOptions {
 }
 
 pub struct LoopData<T, D> {
-    remote_addr: SocketAddr,
-    reader_port: Receiver<(SocketAddr, Packet)>,
-    writer_chan: Sender<(SocketAddr, Packet)>,
-    opts: TransferOptions,
-    current_id: u16,
-    resend: bool,
-    path_handle: T,
-    data: D
+    pub remote_addr: SocketAddr,
+    pub reader_port: Receiver<(SocketAddr, Packet)>,
+    pub writer_chan: Sender<(SocketAddr, Packet)>,
+    pub opts: TransferOptions,
+    pub current_id: u16,
+    pub resend: bool,
+    pub path_handle: T,
+    pub data: D
 }
 
 #[deriving(Eq, Show)]
