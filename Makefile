@@ -20,7 +20,7 @@ lib: $(BUILDDIR)
 	$(RUSTC) $(RUSTOPTS) --out-dir $(BUILDDIR) $(FILE)
 
 test: $(TESTDIR)
-	$(RUSTC) --test -o $(TESTDIR)/test $(FILE)
+	$(RUSTC) --test -O -o $(TESTDIR)/test $(FILE)
 	RUST_TEST_TASKS=1 RUST_LOG=std::rt::backtrace ./$(TESTDIR)/test
 
 bench: $(TESTDIR)

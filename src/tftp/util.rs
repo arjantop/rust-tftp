@@ -1,7 +1,6 @@
 use std::io::{IoResult, IoError, InvalidInput};
 use std::io::net::udp::UdpSocket;
 use std::io::net::ip::{SocketAddr, IpAddr};
-use std::slice;
 
 use rand::random;
 
@@ -61,9 +60,9 @@ pub fn socket_reader(us: UdpSocket, mode: Mode, packet_size: uint) -> Receiver<(
     let (snd, rcv) = channel();
     spawn(proc() {
         let mut socket = us;
-        let mut buf = slice::from_elem(packet_size, 0u8);
+        let mut buf = Vec::from_elem(packet_size, 0u8);
         loop {
-            match receive_packet(&mut socket, mode, buf) {
+            match receive_packet(&mut socket, mode, buf.as_mut_slice()) {
                 Ok(res) => snd.send(res),
                 Err(err) => warn!("Error occured while reading: {}", err)
             }
@@ -78,13 +77,13 @@ pub fn socket_writer(us: UdpSocket, mode: Mode) -> Sender<(SocketAddr, Packet)> 
         let mut socket = us;
         loop {
             match rcv.recv_opt() {
-                Some((addr, packet)) => {
+                Ok((addr, packet)) => {
                     let res = send_packet(&mut socket, &addr, mode, &packet);
                     if res.is_err() {
                         info!("Error occured while writing: {}", res.unwrap_err())
                     }
                 },
-                None => {
+                Err(_) => {
                     info!("Closing writer");
                     return
                 }
