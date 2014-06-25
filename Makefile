@@ -1,6 +1,6 @@
 RUSTC = rustc
 RUSTOPTS = -O
-BUILDDIR = build
+BUILDDIR = target
 TESTDIR = $(BUILDDIR)/test
 EXDIR = $(BUILDDIR)/examples
 FILE = src/tftp/lib.rs
@@ -17,7 +17,7 @@ $(EXDIR): $(BUILDDIR)
 	mkdir -p $@
 
 lib: $(BUILDDIR)
-	$(RUSTC) $(RUSTOPTS) --out-dir $(BUILDDIR) $(FILE)
+	cargo build
 
 test: $(TESTDIR)
 	$(RUSTC) --test -O -o $(TESTDIR)/test $(FILE)

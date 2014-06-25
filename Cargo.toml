@@ -1,0 +1,10 @@
+[package]
+
+name = "tftp"
+version = "0.1.0-pre"
+authors = ["arjan.top@gmail.com"]
+
+[[lib]]
+
+name = "tftp"
+path = "src/tftp/lib.rs"
