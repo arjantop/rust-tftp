@@ -10,11 +10,11 @@ use tftp::client;
 fn main() {
     let args = std::os::args();
     let opts: tftp::TransferOptions = Default::default();
-    let path = Path::new(args[2].clone());
+    let path = Path::new(args.get(2).clone());
     let mut file = BufferedReader::new(File::open(&path));
     let result = client::put(SocketAddr {
         ip: Ipv4Addr(127, 0, 0, 1),
         port: 69
-    }, Path::new(args[1]), opts, &mut file);
+    }, Path::new(args.get(1).as_slice()), opts, &mut file);
     println!("Result: {}", result);
 }

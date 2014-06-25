@@ -5,7 +5,7 @@ TESTDIR = $(BUILDDIR)/test
 EXDIR = $(BUILDDIR)/examples
 FILE = src/tftp/lib.rs
 
-all: test lib
+all: test lib examples
 
 $(BUILDDIR):
 	mkdir -p $@

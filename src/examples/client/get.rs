@@ -23,6 +23,6 @@ fn main() {
     let result = client::get(SocketAddr {
         ip: Ipv4Addr(127, 0, 0, 1),
         port: 69
-    }, Path::new(args[1]), opts, &mut file);
+    }, Path::new(args.get(1).as_slice()), opts, &mut file);
     println!("Result: {}", result);
 }

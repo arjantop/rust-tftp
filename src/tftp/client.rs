@@ -258,7 +258,7 @@ mod test {
         opts.receive_timeout = 2;
         let mut buf = [0u8, ..100];
         let mut writer = io::BufWriter::new(buf);
-        for i in range(1, 3) {
+        for i in range(1u, 3) {
             let d = Vec::from_elem(DEFAULT_BLOCK_SIZE, i as u8);
             reader_snd.send((LOCALHOST, Data(i as u16, d)));
         }
@@ -292,7 +292,7 @@ mod test {
         opts.block_size = 1;
 
         let mut topts = HashMap::new();
-        topts.insert("blksize".to_string(), 1.to_str());
+        topts.insert("blksize".to_string(), 1u.to_str());
 
         let mut writer = io::MemWriter::new();
         reader_snd.send((LOCALHOST, OptionAcknowledgment(topts.clone())));
@@ -331,8 +331,8 @@ mod test {
         opts.rollover = Some(One);
 
         let mut topts = HashMap::new();
-        topts.insert("blksize".to_string(), 1.to_str());
-        topts.insert("rollover".to_string(), 1.to_str());
+        topts.insert("blksize".to_string(), 1u.to_str());
+        topts.insert("rollover".to_string(), 1u.to_str());
 
         let mut writer = io::MemWriter::new();
         reader_snd.send((LOCALHOST, OptionAcknowledgment(topts.clone())));
@@ -519,7 +519,7 @@ mod test {
         let data = gen_data(DEFAULT_BLOCK_SIZE + 11);
         let mut reader = io::BufReader::new(data.as_slice());
         let mut topt = HashMap::new();
-        topt.insert("timeout".to_string(), 3.to_str());
+        topt.insert("timeout".to_string(), 3u.to_str());
         let res = put_assert_sent_opts(opts, &mut reader, [OptionAcknowledgment(topt.clone())],
                                        [WriteRequest("/path".to_string(), Octet, topt),
                                         Data(1, Vec::from_elem(512, 0u8)),
@@ -553,7 +553,7 @@ mod test {
         let data = Vec::from_elem(MAX + 1, 0u8);
         let mut reader = io::BufReader::new(data.as_slice());
         let mut topt = HashMap::new();
-        topt.insert("blksize".to_string(), 1.to_str());
+        topt.insert("blksize".to_string(), 1u.to_str());
 
         reader_snd.send((LOCALHOST, OptionAcknowledgment(topt.clone())));
         for i in range(1, MAX + 1) {
@@ -591,8 +591,8 @@ mod test {
         let data = Vec::from_elem(MAX + 1, 0u8);
         let mut reader = io::BufReader::new(data.as_slice());
         let mut topt = HashMap::new();
-        topt.insert("blksize".to_string(), 1.to_str());
-        topt.insert("rollover".to_string(), 1.to_str());
+        topt.insert("blksize".to_string(), 1u.to_str());
+        topt.insert("rollover".to_string(), 1u.to_str());
 
         reader_snd.send((LOCALHOST, OptionAcknowledgment(topt.clone())));
         for i in range(1, MAX + 1) {
