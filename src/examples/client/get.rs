@@ -1,3 +1,5 @@
+extern crate green;
+extern crate rustuv;
 extern crate tftp;
 
 use std::io;
@@ -7,6 +9,11 @@ use std::io::net::ip::{SocketAddr, Ipv4Addr};
 use std::default::Default;
 
 use tftp::client;
+
+#[start]
+fn start(argc: int, argv: **u8) -> int {
+    green::start(argc, argv, rustuv::event_loop, main)
+}
 
 fn main() {
     let args = std::os::args();

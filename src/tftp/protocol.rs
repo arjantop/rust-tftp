@@ -6,11 +6,11 @@ use std::fmt;
 use std::from_str;
 use std::ascii::StrAsciiExt;
 
-use collections::HashMap;
+use std::collections::hashmap::HashMap;
 
 pub static DEFAULT_BLOCK_SIZE: uint = 512;
 
-#[deriving(Show, Eq, Clone)]
+#[deriving(Show, Eq, PartialEq, Clone)]
 pub enum Opcode {
     RRQ   = 0x01,
     WRQ   = 0x02,
@@ -20,7 +20,7 @@ pub enum Opcode {
     OACK  = 0x06
 }
 
-#[deriving(Eq, Clone)]
+#[deriving(Eq, PartialEq, Clone)]
 pub enum Mode {
     NetAscii,
     Octet
@@ -29,8 +29,8 @@ pub enum Mode {
 impl fmt::Show for Mode {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            NetAscii => write!(fmt.buf, "netascii"),
-            Octet => write!(fmt.buf, "octet")
+            NetAscii => write!(fmt, "netascii"),
+            Octet => write!(fmt, "octet")
         }
     }
 }
@@ -45,7 +45,7 @@ impl from_str::FromStr for Mode {
     }
 }
 
-#[deriving(Clone, Eq)]
+#[deriving(Clone, Eq, PartialEq)]
 pub enum RolloverMethod {
     Zero = 0u16,
     One  = 1u16
@@ -64,14 +64,14 @@ impl from_str::FromStr for RolloverMethod {
 impl fmt::Show for RolloverMethod {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            Zero => write!(fmt.buf, "0"),
-            One => write!(fmt.buf, "1")
+            Zero => write!(fmt, "0"),
+            One => write!(fmt, "1")
         }
     }
 }
 
 
-#[deriving(Show, Eq, Clone)]
+#[deriving(Show, Eq, PartialEq, Clone)]
 pub enum Error {
     Undefined                 = 0x00,
     FileNotFound              = 0x01,
@@ -101,17 +101,17 @@ impl Error {
     }
 }
 
-pub type Filename = ~str;
+pub type Filename = String;
 pub type BlockId = u16;
-pub type Options = HashMap<~str, ~str>;
+pub type Options = HashMap<String, String>;
 
-#[deriving(Show, Eq, Clone)]
+#[deriving(Show, Eq, PartialEq, Clone)]
 pub enum Packet {
     ReadRequest(Filename, Mode, Options),
     WriteRequest(Filename, Mode, Options),
     Data(BlockId, Vec<u8>),
     Acknowledgment(BlockId),
-    Error(Error, ~str),
+    Error(Error, String),
     OptionAcknowledgment(Options)
 }
 
@@ -127,9 +127,10 @@ impl Packet {
         }
     }
 
-    pub fn filename<'a>(&'a self) -> Option<&'a ~str> {
+    pub fn filename<'a>(&'a self) -> Option<&'a str> {
         match *self {
-            ReadRequest(ref filename, _, _) | WriteRequest(ref filename, _, _) => Some(filename),
+            ReadRequest(ref filename, _, _) | WriteRequest(ref filename, _, _) =>
+                Some(filename.as_slice()),
             _ => None
         }
     }
@@ -211,7 +212,6 @@ impl Packet {
         return Ok(())
     }
 
-    #[allow(deprecated_owned_vector)]
     pub fn decode(mode: Mode, p: &[u8]) -> IoResult<Packet> {
         let mut buf = BufReader::new(p);
         let opcode = try!(buf.read_be_u16());
@@ -249,7 +249,7 @@ impl Packet {
         let filename = try!(Packet::read_str(buf));
         let mode_name = try!(Packet::read_str(buf));
         let opts = Packet::decode_options(buf);
-        match from_str::<Mode>(mode_name) {
+        match from_str::<Mode>(mode_name.as_slice()) {
             Some(mode) => Ok(f(filename, mode, opts)),
             None => invalid_input_error("Mode not recognized")
         }
@@ -287,12 +287,11 @@ impl Packet {
         Ok(res)
     }
 
-    #[allow(deprecated_owned_vector)]
-    fn read_str(buf: &mut BufReader) -> IoResult<~str> {
+    fn read_str(buf: &mut BufReader) -> IoResult<String> {
         let bytes = try!(Packet::read_to(buf, 0));
         match str::from_utf8_owned(bytes.as_slice().to_owned()) {
-            Some(read_str) => Ok(read_str),
-            None => invalid_input_error("Wrong string encoding")
+            Ok(read_str) => Ok(read_str),
+            Err(_) => invalid_input_error("Wrong string encoding")
         }
     }
 
@@ -302,7 +301,7 @@ impl Packet {
             let key_opt = Packet::read_str(buf);
             let val_opt = Packet::read_str(buf);
             match (key_opt, val_opt) {
-                (Ok(key), Ok(val)) => { opts.insert(key.to_ascii_lower(), val); },
+                (Ok(key), Ok(val)) => { opts.insert(key.as_slice().to_ascii_lower(), val); },
                 _ => break
             }
         }
@@ -350,10 +349,10 @@ mod test {
     #[test]
     fn option_names_are_parsed_case_insensitive() {
         let mut packet_bytes = Vec::from_slice([0u8, 1]);
-        packet_bytes.push_all(bytes!("file.ext\0octet\0Key\0Val\0"));
+        packet_bytes.push_all(b"file.ext\0octet\0Key\0Val\0");
         match Packet::decode(Octet, packet_bytes.as_slice()).unwrap() {
             ReadRequest(_, _, ref opts) => {
-                assert_eq!(opts.get(&~"key"), &~"Val");
+                assert_eq!(opts.get(&"key".to_string()), &"Val".to_string());
             },
             _ => fail!()
         }
@@ -361,7 +360,7 @@ mod test {
 
     #[test]
     fn encoding_and_decoding_data_in_octet_mode() {
-        let data = bytes!("CR\rNL\nEND\n");
+        let data = b"CR\rNL\nEND\n";
         let packet = Data(9, Vec::from_slice(data));
         let mut packet_bytes = Vec::from_slice([0u8, 3, 0, 9]);
         packet_bytes.push_all(data);
@@ -371,9 +370,9 @@ mod test {
 
     #[test]
     fn encoding_and_decoding_data_in_netascii_mode() {
-        let packet = Data(1, Vec::from_slice(bytes!("CR\rNL\nEND\n")));
+        let packet = Data(1, Vec::from_slice(b"CR\rNL\nEND\n"));
         let mut packet_bytes = Vec::from_slice([0u8, 3, 0, 1]);
-        packet_bytes.push_all(bytes!("CR\r\0NL\r\nEND\r\n"));
+        packet_bytes.push_all(b"CR\r\0NL\r\nEND\r\n");
         assert_eq!(Packet::encode(NetAscii, &packet).unwrap(), packet_bytes);
         assert_eq!(Packet::decode(NetAscii, packet_bytes.as_slice()).unwrap(), packet);
     }
@@ -383,7 +382,7 @@ mod test {
 mod bench {
     extern crate test;
 
-    use collections::hashmap::HashMap;
+    use std::collections::hashmap::HashMap;
     use self::test::Bencher;
 
     use super::{Packet, Mode, Octet, NetAscii};
@@ -403,32 +402,32 @@ mod bench {
 
     #[bench]
     fn encode_read_request(b: &mut Bencher) {
-        bench_encode(b, &ReadRequest(~"file/name.ext", Octet, HashMap::new()), Octet)
+        bench_encode(b, &ReadRequest("file/name.ext".to_string(), Octet, HashMap::new()), Octet)
     }
 
     #[bench]
     fn decode_read_request(b: &mut Bencher) {
-        bench_decode(b, &ReadRequest(~"file/name.ext", Octet, HashMap::new()), Octet)
+        bench_decode(b, &ReadRequest("file/name.ext".to_string(), Octet, HashMap::new()), Octet)
     }
 
     #[bench]
     fn encode_data_octet(b: &mut Bencher) {
-        bench_encode(b, &Data(99, Vec::from_slice(bytes!("hello\r\nworld\n"))), Octet)
+        bench_encode(b, &Data(99, Vec::from_slice(b"hello\r\nworld\n")), Octet)
     }
 
     #[bench]
     fn decode_data_octet(b: &mut Bencher) {
-        bench_decode(b, &Data(99, Vec::from_slice(bytes!("hello\r\nworld\n"))), Octet)
+        bench_decode(b, &Data(99, Vec::from_slice(b"hello\r\nworld\n")), Octet)
     }
 
     #[bench]
     fn encode_data_netascii(b: &mut Bencher) {
-        bench_encode(b, &Data(99, Vec::from_slice(bytes!("hello\r\nworld\n"))), NetAscii)
+        bench_encode(b, &Data(99, Vec::from_slice(b"hello\r\nworld\n")), NetAscii)
     }
 
     #[bench]
     fn decode_data_netascii(b: &mut Bencher) {
-        bench_decode(b, &Data(99, Vec::from_slice(bytes!("hello\r\nworld\n"))), NetAscii)
+        bench_decode(b, &Data(99, Vec::from_slice(b"hello\r\nworld\n")), NetAscii)
     }
 
     #[bench]

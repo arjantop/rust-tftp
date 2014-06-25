@@ -2,7 +2,7 @@ use std::io::{IoResult, IoError, InvalidInput};
 use std::io::net::udp::UdpSocket;
 use std::io::net::ip::{SocketAddr, IpAddr};
 
-use rand::random;
+use std::rand::random;
 
 use protocol::{Mode, Packet};
 
@@ -15,7 +15,7 @@ pub fn random_ephemeral_port() -> u16 {
 pub fn receive_packet(socket: &mut UdpSocket, mode: Mode, buf: &mut [u8]) -> IoResult<(SocketAddr, Packet)> {
     let (len, addr) = try!(socket.recvfrom(buf));
     debug!("[{}] Got {} bytes: {}", addr.to_str(), len, buf.slice_to(len).to_str());
-    let packet_bytes = buf.slice_to(len).to_owned();
+    let packet_bytes = buf.slice_to(len);
     match Packet::decode(mode, packet_bytes) {
         Ok(packet) => {
             info!("[{}] Got packet {}", addr.to_str(), packet.to_str());

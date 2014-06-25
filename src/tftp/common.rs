@@ -8,7 +8,7 @@ use std::hash::Hash;
 use std::from_str;
 use std::default::Default;
 
-use collections::hashmap::HashMap;
+use std::collections::hashmap::HashMap;
 
 use protocol::DEFAULT_BLOCK_SIZE;
 use protocol::{Mode, RolloverMethod, Options, Octet};
@@ -24,28 +24,28 @@ pub struct TransferOptions {
     pub rollover: Option<RolloverMethod>
 }
 
-fn find_as<K: Hash + TotalEq, T: from_str::FromStr>(h: &HashMap<K, ~str>, key: K) -> Option<T> {
-    h.find(&key).and_then(|s| from_str::<T>(*s))
+fn find_as<K: Hash + Eq, T: from_str::FromStr>(h: &HashMap<K, String>, key: K) -> Option<T> {
+    h.find(&key).and_then(|s| from_str::<T>(s.as_slice()))
 }
 
 impl TransferOptions {
     pub fn to_options(&self) -> Options {
         let mut h = HashMap::new();
         let defaults: TransferOptions = Default::default();
-        self.insert_to(&mut h, ~"blksize", &defaults, |o| o.block_size);
-        self.insert_to(&mut h, ~"timeout", &defaults, |o| o.resend_timeout);
-        self.insert_to_opt(&mut h, ~"tsize", &defaults, |o| o.transfer_size);
-        self.insert_to_opt(&mut h, ~"rollover", &defaults, |o| o.rollover);
+        self.insert_to(&mut h, "blksize".to_string(), &defaults, |o| o.block_size);
+        self.insert_to(&mut h, "timeout".to_string(), &defaults, |o| o.resend_timeout);
+        self.insert_to_opt(&mut h, "tsize".to_string(), &defaults, |o| o.transfer_size);
+        self.insert_to_opt(&mut h, "rollover".to_string(), &defaults, |o| o.rollover);
         h
     }
 
-    fn insert_to<T: ToStr + Eq>(&self, h: &mut Options, key: ~str, defaults: &TransferOptions, f: |&TransferOptions| -> T) {
+    fn insert_to<T: ToStr + Eq>(&self, h: &mut Options, key: String, defaults: &TransferOptions, f: |&TransferOptions| -> T) {
         if f(self) != f(defaults) {
             h.insert(key, f(self).to_str());
         }
     }
 
-    fn insert_to_opt<T: ToStr + Eq>(&self, h: &mut Options, key: ~str, defaults: &TransferOptions, f: |&TransferOptions| -> Option<T>) {
+    fn insert_to_opt<T: ToStr + Eq>(&self, h: &mut Options, key: String, defaults: &TransferOptions, f: |&TransferOptions| -> Option<T>) {
         if f(self) != f(defaults) {
              h.insert(key, f(self).unwrap().to_str());
         }
@@ -56,16 +56,16 @@ impl TransferOptions {
         for key in opts.keys() {
             match key.as_slice() {
                 "blksize" => {
-                    default.block_size = find_as(opts, ~"blksize").unwrap_or(default.block_size);
+                    default.block_size = find_as(opts, "blksize".to_string()).unwrap_or(default.block_size);
                 }
                 "tsize" => {
-                    default.transfer_size = find_as(opts, ~"tsize");
+                    default.transfer_size = find_as(opts, "tsize".to_string());
                 }
                 "timeout" => {
-                    default.resend_timeout = find_as(opts, ~"timeout").unwrap_or(default.resend_timeout);
+                    default.resend_timeout = find_as(opts, "timeout".to_string()).unwrap_or(default.resend_timeout);
                 }
                 "rollover" => {
-                    default.rollover = find_as(opts, ~"rollover");
+                    default.rollover = find_as(opts, "rollover".to_string());
                 }
                 _ => continue
             }
@@ -98,7 +98,7 @@ pub struct LoopData<T, D> {
     pub data: D
 }
 
-#[deriving(Eq, Show)]
+#[deriving(Eq, PartialEq, Show)]
 enum Selected {
     Timeout,
     ResendTimeout,
@@ -182,7 +182,7 @@ pub fn receive_loop<T, D>(mut d: LoopData<T, D>,
         let (addr, packet) = d.reader_port.recv();
         if addr != d.remote_addr && !first {
             warn!("Different TID: {}, {}", addr.to_str(), d.remote_addr.to_str());
-            let err_packet = Error(UnknownTransferId, ~"Unknown TID");
+            let err_packet = Error(UnknownTransferId, "Unknown TID".to_string());
             d.writer_chan.send((addr, err_packet))
         } else {
             let first_packet = first;

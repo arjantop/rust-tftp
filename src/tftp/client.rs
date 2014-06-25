@@ -35,7 +35,7 @@ fn get_internal(reader_recv: Receiver<(SocketAddr, Packet)>,
         data: Void
     };
     receive_loop(loop_data, false, |d| {
-        let path_str = path.as_str().unwrap().into_owned();
+        let path_str = path.as_str().unwrap().into_string();
         d.writer_chan.send((remote_addr, ReadRequest(path_str, d.opts.mode, d.opts.to_options())));
     }, |_| Normal, |d, first_packet, packet, reset| {
         match *packet {
@@ -111,7 +111,7 @@ fn put_internal(reader_recv: Receiver<(SocketAddr, Packet)>,
         data: None
     };
     receive_loop(loop_data, true, |d| {
-        let path_str = path.as_str().unwrap().into_owned();
+        let path_str = path.as_str().unwrap().into_string();
         d.writer_chan.send((d.remote_addr, WriteRequest(path_str, d.opts.mode, d.opts.to_options())));
     }, |d| {
         if d.resend {
@@ -159,7 +159,7 @@ mod test {
     use std::io::net::ip::{SocketAddr, Ipv4Addr};
     use std::default::Default;
 
-    use collections::HashMap;
+    use std::collections::HashMap;
 
     use super::{get_internal, put_internal};
     use common::TransferOptions;
@@ -215,7 +215,7 @@ mod test {
         let data = gen_data(511);
         assert_eq!(get_assert_received(data.as_slice(),
                                        [Data(1, Vec::from_elem(511, 0u8))],
-                                       [ReadRequest(~"/path", Octet, HashMap::new()),
+                                       [ReadRequest("/path".to_string(), Octet, HashMap::new()),
                                         Acknowledgment(1)]), Ok(()));
     }
 
@@ -225,7 +225,7 @@ mod test {
         assert_eq!(get_assert_received(data.as_slice(),
                                        [Data(1, Vec::from_elem(512, 0u8)),
                                         Data(2, Vec::from_elem(0, 1u8))],
-                                       [ReadRequest(~"/path", Octet, HashMap::new()),
+                                       [ReadRequest("/path".to_string(), Octet, HashMap::new()),
                                         Acknowledgment(1),
                                         Acknowledgment(2)]), Ok(()));
     }
@@ -237,7 +237,7 @@ mod test {
                                        [Data(1, Vec::from_elem(512, 0u8)),
                                         Data(2, Vec::from_elem(512, 1u8)),
                                         Data(3, Vec::from_elem(10, 2u8))],
-                                       [ReadRequest(~"/path", Octet, HashMap::new()),
+                                       [ReadRequest("/path".to_string(), Octet, HashMap::new()),
                                         Acknowledgment(1),
                                         Acknowledgment(2),
                                         Acknowledgment(3)]), Ok(()));
@@ -245,7 +245,7 @@ mod test {
 
     #[test]
     fn get_timeouts_if_not_receiving_packets() {
-        let res = get_assert_received([], [], [ReadRequest(~"/path", Octet, HashMap::new())]);
+        let res = get_assert_received([], [], [ReadRequest("/path".to_string(), Octet, HashMap::new())]);
         assert_eq!(Err(ERR_TIMEOUT.clone()), res);
     }
 
@@ -275,7 +275,7 @@ mod test {
                                         Data(2, Vec::from_elem(512, 1u8)),
                                         Data(1, Vec::from_elem(512, 0u8)),
                                         Data(3, Vec::from_elem(90, 2u8))],
-                                       [ReadRequest(~"/path", Octet, HashMap::new()),
+                                       [ReadRequest("/path".to_string(), Octet, HashMap::new()),
                                         Acknowledgment(1),
                                         Acknowledgment(2),
                                         Acknowledgment(3)]), Ok(()));
@@ -292,7 +292,7 @@ mod test {
         opts.block_size = 1;
 
         let mut topts = HashMap::new();
-        topts.insert(~"blksize", 1.to_str());
+        topts.insert("blksize".to_string(), 1.to_str());
 
         let mut writer = io::MemWriter::new();
         reader_snd.send((LOCALHOST, OptionAcknowledgment(topts.clone())));
@@ -302,7 +302,7 @@ mod test {
         reader_snd.send((LOCALHOST, Data(0, Vec::from_slice([0u8]))));
         reader_snd.send((LOCALHOST, Data(1, Vec::from_slice([]))));
 
-        let mut expected = Vec::from_slice([ReadRequest(~"/path", Octet, topts)]);
+        let mut expected = Vec::from_slice([ReadRequest("/path".to_string(), Octet, topts)]);
         for i in range(0, MAX + 1) {
             expected.push(Acknowledgment(i as u16));
         }
@@ -331,8 +331,8 @@ mod test {
         opts.rollover = Some(One);
 
         let mut topts = HashMap::new();
-        topts.insert(~"blksize", 1.to_str());
-        topts.insert(~"rollover", 1.to_str());
+        topts.insert("blksize".to_string(), 1.to_str());
+        topts.insert("rollover".to_string(), 1.to_str());
 
         let mut writer = io::MemWriter::new();
         reader_snd.send((LOCALHOST, OptionAcknowledgment(topts.clone())));
@@ -342,7 +342,7 @@ mod test {
         reader_snd.send((LOCALHOST, Data(1, Vec::from_slice([0u8]))));
         reader_snd.send((LOCALHOST, Data(2, Vec::from_slice([]))));
 
-        let mut expected = Vec::from_slice([ReadRequest(~"/path", Octet, topts)]);
+        let mut expected = Vec::from_slice([ReadRequest("/path".to_string(), Octet, topts)]);
         for i in range(0, MAX + 1) {
             expected.push(Acknowledgment(i as u16));
         }
@@ -370,13 +370,13 @@ mod test {
         opts.rollover = Some(Zero);
 
         let mut topts = HashMap::new();
-        topts.insert(~"blksize", ~"1024");
-        topts.insert(~"tsize", ~"0");
-        topts.insert(~"timeout", ~"11");
-        topts.insert(~"rollover", ~"0");
+        topts.insert("blksize".to_string(), "1024".to_string());
+        topts.insert("tsize".to_string(), "0".to_string());
+        topts.insert("timeout".to_string(), "11".to_string());
+        topts.insert("rollover".to_string(), "0".to_string());
         assert_eq!(get_assert_received_opts(opts, data.as_slice(),
                                             [Data(1, Vec::new())],
-                                            [ReadRequest(~"/path", Octet, topts),
+                                            [ReadRequest("/path".to_string(), Octet, topts),
                                              Acknowledgment(1)]), Ok(()));
     }
 
@@ -387,11 +387,11 @@ mod test {
         opts.block_size = 1024;
 
         let mut topts = HashMap::new();
-        topts.insert(~"blksize", ~"1024");
+        topts.insert("blksize".to_string(), "1024".to_string());
         assert_eq!(get_assert_received_opts(opts, data.as_slice(),
                                             [Data(1, Vec::from_elem(DEFAULT_BLOCK_SIZE, 0u8)),
                                              Data(2, Vec::from_elem(2, 1u8))],
-                                            [ReadRequest(~"/path", Octet, topts),
+                                            [ReadRequest("/path".to_string(), Octet, topts),
                                              Acknowledgment(1),
                                              Acknowledgment(2)]), Ok(()));
     }
@@ -403,15 +403,15 @@ mod test {
         opts.block_size = 1024;
 
         let mut topts = HashMap::new();
-        topts.insert(~"blksize", ~"1024");
+        topts.insert("blksize".to_string(), "1024".to_string());
 
         let mut topts_ack = HashMap::new();
-        topts_ack.insert(~"blksize", ~"256");
+        topts_ack.insert("blksize".to_string(), "256".to_string());
         assert_eq!(get_assert_received_opts(opts, data.as_slice(),
                                             [OptionAcknowledgment(topts_ack),
                                              Data(1, Vec::from_elem(256, 0u8)),
                                              Data(2, Vec::from_elem(9, 1u8))],
-                                            [ReadRequest(~"/path", Octet, topts),
+                                            [ReadRequest("/path".to_string(), Octet, topts),
                                              Acknowledgment(0),
                                              Acknowledgment(1),
                                              Acknowledgment(2)]), Ok(()));
@@ -424,15 +424,15 @@ mod test {
         opts.block_size = 400;
 
         let mut topts = HashMap::new();
-        topts.insert(~"blksize", ~"400");
+        topts.insert("blksize".to_string(), "400".to_string());
 
         let mut topts2 = HashMap::new();
-        topts2.insert(~"blksize", ~"256");
+        topts2.insert("blksize".to_string(), "256".to_string());
         assert_eq!(get_assert_received_opts(opts, data.as_slice(),
                                             [OptionAcknowledgment(topts.clone()),
                                              OptionAcknowledgment(topts2),
                                              Data(1, Vec::from_elem(300, 0u8))],
-                                            [ReadRequest(~"/path", Octet, topts),
+                                            [ReadRequest("/path".to_string(), Octet, topts),
                                              Acknowledgment(0),
                                              Acknowledgment(1)]), Ok(()));
     }
@@ -468,7 +468,7 @@ mod test {
         assert_eq!(put_assert_sent(data.as_slice(),
                                    [Acknowledgment(0),
                                     Acknowledgment(1)],
-                                   [WriteRequest(~"/path", Octet, HashMap::new()),
+                                   [WriteRequest("/path".to_string(), Octet, HashMap::new()),
                                     Data(1, Vec::from_elem(111, 0u8))]), Ok(()));
     }
 
@@ -479,7 +479,7 @@ mod test {
                                    [Acknowledgment(0),
                                     Acknowledgment(1),
                                     Acknowledgment(2)],
-                                   [WriteRequest(~"/path", Octet, HashMap::new()),
+                                   [WriteRequest("/path".to_string(), Octet, HashMap::new()),
                                     Data(1, Vec::from_elem(DEFAULT_BLOCK_SIZE, 0u8)),
                                     Data(2, Vec::from_elem(0, 1u8))]), Ok(()));
     }
@@ -491,14 +491,14 @@ mod test {
                                    [Acknowledgment(0),
                                     Acknowledgment(1),
                                     Acknowledgment(2)],
-                                   [WriteRequest(~"/path", Octet, HashMap::new()),
+                                   [WriteRequest("/path".to_string(), Octet, HashMap::new()),
                                     Data(1, Vec::from_elem(512, 0u8)),
                                     Data(2, Vec::from_elem(200, 1u8))]), Ok(()));
     }
 
     #[test]
     fn put_timeouts_if_not_receiving_packets() {
-        let res = put_assert_sent([], [], [WriteRequest(~"/path", Octet, HashMap::new())]);
+        let res = put_assert_sent([], [], [WriteRequest("/path".to_string(), Octet, HashMap::new())]);
         assert_eq!(Err(ERR_TIMEOUT.clone()), res);
     }
 
@@ -507,7 +507,7 @@ mod test {
         let data = [];
         let mut reader = io::BufReader::new(data);
         let res = put_assert_sent_buf(&mut reader, [],
-                                      [WriteRequest(~"/path", Octet, HashMap::new())]);
+                                      [WriteRequest("/path".to_string(), Octet, HashMap::new())]);
         assert!(res.is_err());
     }
 
@@ -519,9 +519,9 @@ mod test {
         let data = gen_data(DEFAULT_BLOCK_SIZE + 11);
         let mut reader = io::BufReader::new(data.as_slice());
         let mut topt = HashMap::new();
-        topt.insert(~"timeout", 3.to_str());
+        topt.insert("timeout".to_string(), 3.to_str());
         let res = put_assert_sent_opts(opts, &mut reader, [OptionAcknowledgment(topt.clone())],
-                                       [WriteRequest(~"/path", Octet, topt),
+                                       [WriteRequest("/path".to_string(), Octet, topt),
                                         Data(1, Vec::from_elem(512, 0u8)),
                                         Data(1, Vec::from_elem(512, 0u8))]);
         assert_eq!(Err(ERR_TIMEOUT.clone()), res);
@@ -536,7 +536,7 @@ mod test {
                                     Acknowledgment(2),
                                     Acknowledgment(1),
                                     Acknowledgment(2)],
-                                   [WriteRequest(~"/path", Octet, HashMap::new()),
+                                   [WriteRequest("/path".to_string(), Octet, HashMap::new()),
                                     Data(1, Vec::from_elem(512, 0u8)),
                                     Data(2, Vec::from_elem(10, 1u8))]), Ok(()));
     }
@@ -553,7 +553,7 @@ mod test {
         let data = Vec::from_elem(MAX + 1, 0u8);
         let mut reader = io::BufReader::new(data.as_slice());
         let mut topt = HashMap::new();
-        topt.insert(~"blksize", 1.to_str());
+        topt.insert("blksize".to_string(), 1.to_str());
 
         reader_snd.send((LOCALHOST, OptionAcknowledgment(topt.clone())));
         for i in range(1, MAX + 1) {
@@ -562,7 +562,7 @@ mod test {
         reader_snd.send((LOCALHOST, Acknowledgment(0)));
         reader_snd.send((LOCALHOST, Acknowledgment(1)));
 
-        let mut expected = Vec::from_slice([WriteRequest(~"/path", Octet, topt)]);
+        let mut expected = Vec::from_slice([WriteRequest("/path".to_string(), Octet, topt)]);
         for i in range(1, MAX + 1) {
             expected.push(Data(i as u16, Vec::from_slice([0u8])));
         }
@@ -591,8 +591,8 @@ mod test {
         let data = Vec::from_elem(MAX + 1, 0u8);
         let mut reader = io::BufReader::new(data.as_slice());
         let mut topt = HashMap::new();
-        topt.insert(~"blksize", 1.to_str());
-        topt.insert(~"rollover", 1.to_str());
+        topt.insert("blksize".to_string(), 1.to_str());
+        topt.insert("rollover".to_string(), 1.to_str());
 
         reader_snd.send((LOCALHOST, OptionAcknowledgment(topt.clone())));
         for i in range(1, MAX + 1) {
@@ -601,7 +601,7 @@ mod test {
         reader_snd.send((LOCALHOST, Acknowledgment(1)));
         reader_snd.send((LOCALHOST, Acknowledgment(2)));
 
-        let mut expected = Vec::from_slice([WriteRequest(~"/path", Octet, topt)]);
+        let mut expected = Vec::from_slice([WriteRequest("/path".to_string(), Octet, topt)]);
         for i in range(1, MAX + 1) {
             expected.push(Data(i as u16, Vec::from_slice([0u8])));
         }
@@ -628,16 +628,16 @@ mod test {
         opts.rollover = Some(Zero);
 
         let mut topts = HashMap::new();
-        topts.insert(~"blksize", ~"1024");
-        topts.insert(~"tsize", ~"0");
-        topts.insert(~"timeout", ~"11");
-        topts.insert(~"rollover", ~"0");
+        topts.insert("blksize".to_string(), "1024".to_string());
+        topts.insert("tsize".to_string(), "0".to_string());
+        topts.insert("timeout".to_string(), "11".to_string());
+        topts.insert("rollover".to_string(), "0".to_string());
 
         let mut reader = io::BufReader::new(data.as_slice());
         assert_eq!(put_assert_sent_opts(opts, &mut reader,
                                             [Acknowledgment(0),
                                              Acknowledgment(1)],
-                                            [WriteRequest(~"/path", Octet, topts),
+                                            [WriteRequest("/path".to_string(), Octet, topts),
                                              Data(1, Vec::new())]), Ok(()));
     }
 
@@ -648,13 +648,13 @@ mod test {
         opts.block_size = 1024;
 
         let mut topts = HashMap::new();
-        topts.insert(~"blksize", ~"1024");
+        topts.insert("blksize".to_string(), "1024".to_string());
         let mut reader = io::BufReader::new(data.as_slice());
         assert_eq!(put_assert_sent_opts(opts, &mut reader,
                                             [Acknowledgment(0),
                                              Acknowledgment(1),
                                              Acknowledgment(2)],
-                                            [WriteRequest(~"/path", Octet, topts),
+                                            [WriteRequest("/path".to_string(), Octet, topts),
                                              Data(1, Vec::from_elem(DEFAULT_BLOCK_SIZE, 0u8)),
                                              Data(2, Vec::from_elem(2, 1u8))]), Ok(()));
     }
@@ -666,16 +666,16 @@ mod test {
         opts.block_size = 1024;
 
         let mut topts = HashMap::new();
-        topts.insert(~"blksize", ~"1024");
+        topts.insert("blksize".to_string(), "1024".to_string());
 
         let mut topts_ack = HashMap::new();
-        topts_ack.insert(~"blksize", ~"256");
+        topts_ack.insert("blksize".to_string(), "256".to_string());
         let mut reader = io::BufReader::new(data.as_slice());
         assert_eq!(put_assert_sent_opts(opts, &mut reader,
                                             [OptionAcknowledgment(topts_ack),
                                              Acknowledgment(1),
                                              Acknowledgment(2)],
-                                            [WriteRequest(~"/path", Octet, topts),
+                                            [WriteRequest("/path".to_string(), Octet, topts),
                                              Data(1, Vec::from_elem(256, 0u8)),
                                              Data(2, Vec::from_elem(9, 1u8))]), Ok(()));
     }
@@ -687,16 +687,16 @@ mod test {
         opts.block_size = 400;
 
         let mut topts = HashMap::new();
-        topts.insert(~"blksize", ~"400");
+        topts.insert("blksize".to_string(), "400".to_string());
 
         let mut topts2 = HashMap::new();
-        topts2.insert(~"blksize", ~"256");
+        topts2.insert("blksize".to_string(), "256".to_string());
         let mut reader = io::BufReader::new(data.as_slice());
         assert_eq!(put_assert_sent_opts(opts, &mut reader,
                                             [OptionAcknowledgment(topts.clone()),
                                              OptionAcknowledgment(topts2),
                                              Acknowledgment(1)],
-                                            [WriteRequest(~"/path", Octet, topts),
+                                            [WriteRequest("/path".to_string(), Octet, topts),
                                              Data(1, Vec::from_elem(300, 0u8))]), Ok(()));
     }
 }
